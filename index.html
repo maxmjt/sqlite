@@ -1,0 +1,380 @@
+<!doctype html>
+ 
+ <html>
+ 
+<head>
+ 
+    <title>Exercise 3</title>
+ 
+    <!--<link rel="Stylesheet"  href="Styles/ExercisePage3StyleSheet.css"/>-->
+    <link rel="Stylesheet"  href="styles/bootstrap/css/bootstrap.css"/>
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+    <script src="js/geo.js?id=1" type="text/javascript" charset="utf-8"></script>
+     <!--<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"></script>-->
+     <script type="text/javascript" src="libs/jquery.min.js"></script>
+    <script>
+      //  Declare SQL Query for SQLite
+    
+
+    /*function success_callback(p)
+    {
+      alert('lat='+p.coords.latitude.toFixed(2)+';lon='+p.coords.longitude.toFixed(2));
+    }
+    
+    function error_callback(p)
+    {
+      alert('error='+p.code);
+    }*/
+    var createStatement = "CREATE TABLE IF NOT EXISTS Contacts (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, useremail TEXT)";
+     
+    var selectAllStatement = "SELECT * FROM Contacts";
+     
+    var insertStatement = "INSERT INTO Contacts (username, useremail) VALUES (?, ?)";
+     
+    var updateStatement = "UPDATE Contacts SET username = ?, useremail = ? WHERE id=?";
+     
+    var deleteStatement = "DELETE FROM Contacts WHERE id=?";
+     
+    var dropStatement = "DROP TABLE Contacts";
+
+    var createStatement1 = "CREATE TABLE IF NOT EXISTS Traking (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha DATETIME, latitude FLOAT, longitude FLOAT)";     
+    var selectAllStatement1 = "SELECT * FROM Traking";     
+    var insertStatement1 = "INSERT INTO Traking (fecha, latitude, longitude) VALUES (?, ?, ?)";     
+    var updateStatement1 = "UPDATE Traking SET fecha = ?, latitude = ?, longitude = ? WHERE id=?";     
+    var deleteStatement1 = "DELETE FROM Traking WHERE id=?";     
+    var dropStatement1 = "DROP TABLE Traking";     
+    var db = openDatabase("AddressBook", "1.0", "Address Book", 200000);  // Open SQLite Database
+     
+     
+    var dataset;
+     
+    var DataType;
+     
+     function initDatabase()  // Function Call When Page is ready.
+     
+    {
+     
+        try {
+     
+            if (!window.openDatabase)  // Check browser is supported SQLite or not.
+     
+            {
+     
+                alert('Databases are not supported in this browser.');
+     
+            }
+     
+            else {
+     
+                createTable();  // If supported then call Function for create table in SQLite
+     
+            }
+     
+        }
+     
+        catch (e) {
+     
+            if (e == 2) {
+     
+                // Version number mismatch. 
+     
+                console.log("Invalid database version.");
+     
+            } else {
+     
+                console.log("Unknown error " + e + ".");
+     
+            }
+     
+            return;
+     
+        }
+     
+    }
+     
+    function createTable()  // Function for Create Table in SQLite.
+     
+    {
+        
+        db.transaction(function (tx) { tx.executeSql(createStatement, [], showRecords, onError); });
+        db.transaction(function (tx) { tx.executeSql(createStatement1, [], showRecords, onError); });
+        var thiss=this;
+        if(thiss.geo_position_js.init()){
+        var myvar=setInterval(
+            function clock()
+            {
+              
+              //var t=d.toLocaleTimeString();
+              //document.getElementById("clock").value=t;
+                //alert("hizo");
+                //if(thiss.geo_position_js.init()){
+                /*navigator.geolocation.watchPosition(function(position) {
+                console.log(position.coords.latitude+'  '+position.coords.longitude);
+                alert('lat:'+position.coords.latitude+'   '+'long:'+position.coords.longitude);
+                });*/
+                thiss.geo_position_js.getCurrentPosition(
+                    function success_callback(p)
+                { 
+                  var d=new Date();
+                  thiss.insertRecordtraking(d,p.coords.latitude,p.coords.longitude);
+                  db.transaction(function (tx) {
+                  tx.executeSql(selectAllStatement1, [], function (tx, result) {
+     
+                          dataset = result.rows;
+               
+                          for (var i = 0, item = null; i < dataset.length; i++) {
+               
+                              item = dataset.item(i);
+               
+                              var linkeditdelete = '<li>'+item['fecha']+' , '+item['latitude']+', '+item['longitude']+'</li>';
+               
+                              $("#results").append(linkeditdelete);
+               
+                          }
+               
+                      });
+               
+                  });
+
+                  //alert('lat='+p.coords.latitude/*.toFixed(2)*/+';lon='+p.coords.longitude/*.toFixed(2)*/);
+                },function error_callback(p)
+                {
+                  alert('error='+p.code);
+                },{enableHighAccuracy:true});
+                
+            }
+          ,300000);//cada 5 minutos 300000
+            }else{
+                  alert("Functionality not available");
+                }
+     
+    }
+    function insertRecordtraking(fecha,latitude,longitude) // Get value from Input and insert record . Function Call when Save/Submit Button Click..
+     
+    {
+            
+            //var usernametemp = $('input:text[id=username]').val();     
+            //var useremailtemp = $('input:text[id=useremail]').val();
+            db.transaction(function (tx) { tx.executeSql(insertStatement1, [fecha, latitude,longitude], loadAndReset, onError); });
+
+     
+    }
+
+    function insertRecord() // Get value from Input and insert record . Function Call when Save/Submit Button Click..
+     
+    {
+            
+            var usernametemp = $('input:text[id=username]').val();
+     
+            var useremailtemp = $('input:text[id=useremail]').val();
+            db.transaction(function (tx) { tx.executeSql(insertStatement, [usernametemp, useremailtemp], loadAndReset, onError); });
+
+              /*navigator.geolocation.watchPosition(function(position) {
+              console.log(position.coords.latitude+'  '+position.coords.longitude);
+              alert('lat:'+position.coords.latitude+'   '+'long:'+position.coords.longitude);
+              });*/
+            //tx.executeSql(SQL Query Statement,[ Parameters ] , Sucess Result Handler Function, Error Result Handler Function );
+     
+    }
+     
+    function deleteRecord(id) // Get id of record . Function Call when Delete Button Click..
+     
+    {
+     
+        var iddelete = id.toString();
+     
+        db.transaction(function (tx) { tx.executeSql(deleteStatement, [id], showRecords, onError); alert("Delete Sucessfully"); });
+     
+        resetForm();
+     
+    }
+     
+    function updateRecord() // Get id of record . Function Call when Delete Button Click..
+     
+    {
+     
+        var usernameupdate = $('input:text[id=username]').val().toString();
+     
+        var useremailupdate = $('input:text[id=useremail]').val().toString();
+     
+        var useridupdate = $("#id").val();
+     
+        db.transaction(function (tx) { tx.executeSql(updateStatement, [usernameupdate, useremailupdate, Number(useridupdate)], loadAndReset, onError); });
+     
+    }
+     
+    function dropTable() // Function Call when Drop Button Click.. Talbe will be dropped from database.
+     
+    {
+     
+        db.transaction(function (tx) { tx.executeSql(dropStatement, [], showRecords, onError); });
+        db.transaction(function (tx) { tx.executeSql(dropStatement1, [], showRecords, onError); });
+        resetForm();
+     
+        initDatabase();
+     
+    }
+     
+    function loadRecord(i) // Function for display records which are retrived from database.
+     
+    {
+     
+        var item = dataset.item(i);
+     
+        $("#username").val((item['username']).toString());
+     
+        $("#useremail").val((item['useremail']).toString());
+     
+        $("#id").val((item['id']).toString());
+     
+    }
+     
+    function resetForm() // Function for reset form input values.
+     
+    {
+     
+        $("#username").val("");
+     
+        $("#useremail").val("");
+     
+        $("#id").val("");
+     
+    }
+     
+    function loadAndReset() //Function for Load and Reset...
+     
+    {
+     
+        resetForm();
+     
+        showRecords()
+     
+    }
+     
+    function onError(tx, error) // Function for Hendeling Error...
+     
+    {
+     
+        alert(error.message);
+     
+    }
+     
+    function showRecords() // Function For Retrive data from Database Display records as list
+     
+    {
+     
+        $("#results").html('')
+     
+        db.transaction(function (tx) {
+     
+            tx.executeSql(selectAllStatement, [], function (tx, result) {
+     
+                dataset = result.rows;
+     
+                for (var i = 0, item = null; i < dataset.length; i++) {
+     
+                    item = dataset.item(i);
+     
+                    var linkeditdelete = '<li>' + item['username'] + ' , ' + item['useremail'] + '    ' + '<a href="#" onclick="loadRecord(' + i + ');">edit</a>' + '    ' +
+     
+                                                '<a href="#" onclick="deleteRecord(' + item['id'] + ');">delete</a></li>';
+     
+                    $("#results").append(linkeditdelete);
+     
+                }
+     
+            });
+
+            /*tx.executeSql(selectAllStatement1, [], function (tx, result) {
+     
+                dataset = result.rows;
+     
+                for (var i = 0, item = null; i < dataset.length; i++) {
+     
+                    item = dataset.item(i);
+     
+                    var linkeditdelete = '<li>'+item['fecha']+' , '+item['latitude']+', '+item['latitude']+'</li>';
+     
+                    $("#results").append(linkeditdelete);
+     
+                }
+     
+            });*/
+     
+        });
+     
+    }
+     
+    $(document).ready(function () // Call function when page is ready for load..
+     
+    {
+    ;
+     
+        $("body").fadeIn(2000); // Fede In Effect when Page Load..
+     
+        initDatabase();
+     
+        $("#submitButton").click(insertRecord);  // Register Event Listener when button click.
+     
+        $("#btnUpdate").click(updateRecord);
+     
+        $("#btnReset").click(resetForm);
+     
+        $("#btnDrop").click(dropTable);
+     
+    });
+
+    </script>
+<body>
+ 
+<h3>--MAX JIMENEZ T.--</h3>
+ 
+              <form id="mycontact">
+ 
+                     <fieldset>
+ 
+                           <legend>Ingrese datos</legend>
+ 
+                           <ol>
+ 
+                                  <li>
+ 
+                                         <label for="username">Nombre</label>
+ 
+                                         <input id="username" type="text" placeholder="First and last name" required autofocus pattern=" ">
+ 
+                        <input type="hidden" id="id"/>
+ 
+                                  </li>
+ 
+                                  <li>
+ 
+                                         <label for="useremail">Email</label>
+ 
+                                         <input id="useremail" type="text" placeholder="example@domain.com" required pattern=" ">
+ 
+                                  </li>
+ 
+                           </ol>
+ 
+                     </fieldset>
+ 
+                <button id="btnReset" type="submit" class="btn btn-primary">Reset</button>
+ 
+                     <button id="submitButton" type="submit" class="btn btn-primary">SAVE</button>
+ 
+                <button id="btnUpdate" type="submit" class="btn btn-primary">UPDATE</button>
+ 
+                <button id="btnDrop" type="submit" class="btn btn-primary">DROP</button>
+ 
+              </form><br />
+ 
+        <div id="results"></div>
+ 
+</body>
+ 
+ <script type="text/javascript" src="../Scripts/ExercisePage3JS.js"> </script>
+ 
+</html>
+ 
+<span style="font-family: Calibri; font-size: small;"> 
